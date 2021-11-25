@@ -46,17 +46,9 @@
             // SCENE GRAPH
             scene.add(scenary);
 
+
             // CAMERA (PERSPECTIVE)
-            const fov = 60;    // Field ov view
-            const aspect = window.innerWidth / window.innerHeight;
-            const near = 0.01;
-            const far = 10000.0;
-            camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-            camera.position.set(-100, 100, 300);
-            // CAMERA CONTROLS
-            orbitControls = new OrbitControls(camera, renderer.domElement);
-            //orbitControls.target = model.position;
-            orbitControls.update();
+            camera = new Camera();
 
             // SETUP STATS
             stats = new Stats();
@@ -97,6 +89,28 @@
                 scenary.setWireframeTrafficLightTexture(value);
                                                 
             });
+
+            // CAMERA-MENU
+            const guiCameraMenu = gui.addFolder("Camera Menu");
+            guiCameraMenu.add(camera, "perspectiveView").name("Perspective View").listen().onChange(function() {
+                camera.setPerspectiveView();
+            });
+            guiCameraMenu.add(camera, "topView").name("Top View").listen().onChange(function() {
+                camera.setTopView();
+            });
+            guiCameraMenu.add(camera, "sideView").name("Side View").listen().onChange(function() {
+                camera.setSideView();
+            });
+            /*
+            guiCameraMenu.add(camera, "inModelView").name("In Model View").listen().onChange(function(model) {
+                camera.setInModelView(model);
+            });
+            */
+            guiCameraMenu.add(camera, "doAutoRotate").name("Auto Rotate").listen().onChange(function(value) {
+                camera.setAutoRotate(value);
+            });
+            guiCameraMenu.open();
+
 
             
 
@@ -139,6 +153,16 @@
                             car.setDirection(dir);
                         }
                     }
+
+                    if(camera.orbitControls.autoRotate) {
+                        camera.orbitControls.update();
+                    }
+
+                    /*
+                    if(camera.inModelView) {
+                        camera.setInModelView(car);
+                    }
+                    */
                     frameCounter++;
                }
            }
@@ -164,6 +188,75 @@
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);            
         }, false);
+
+        class Camera extends THREE.PerspectiveCamera {
+            constructor(fov = 70, aspect = window.innerWidth / window.innerHeight, near = 0.01, far = 10000.0) {
+                super(fov, aspect, near, far);
+
+                this.perspectiveView = false;
+                this.topView = false;
+                this.sideView = false;
+                //this.inModelView = false;
+                this.doAutoRotate = false;
+
+                // CAMERA CONTROLS
+                this.orbitControls = new OrbitControls(this, renderer.domElement);
+                this.orbitControls.update();
+            }
+            setPerspectiveView() {
+                this.position.set(-100, 100, 300);
+                this.orbitControls.target = new THREE.Vector3(0, 0, 0);
+                this.up.set(0, 1, 0);
+                this.orbitControls.update();
+
+                // DISABLE THE OTHER CAMERAS
+                this.topView = false;
+                this.frontView = false;
+                this.sideView = false;
+                this.inModelView = false;
+            }
+            setTopView() {
+                this.position.set(0, 425, 0);
+                this.orbitControls.target = new THREE.Vector3(0, 0, 0);
+                this.up.set(-1, 0, 0);
+                this.orbitControls.update();
+
+                // DISABLE THE OTHER CAMERAS
+                this.perspectiveView = false;
+                this.frontView = false;
+                this.sideView = false;
+                this.inModelView = false;
+            }
+            setSideView() {
+                this.position.set(240, 1.8, 0);
+                this.orbitControls.target = new THREE.Vector3(0, 0, 0);
+                this.up.set(0, 1, 0);
+                this.orbitControls.update();
+
+                // DISABLE THE OTHER CAMERAS
+                this.perspectiveView = false;
+                this.topView = false;
+                this.frontView = false;
+                this.inModelView = false;
+            }
+            /*
+            setInModelView(model) {
+                this.position.set(model.position.x - 0.5, model.position.y + 1.7, model.position.z);
+                this.orbitControls.target = new THREE.Vector3(model.position.x - 0.5, model.position.y + 1.7, model.position.z);
+                this.up.set(0, 1, 0);
+                this.orbitControls.update();
+
+                // DISABLE THE OTHER CAMERAS
+                this.perspectiveView = false;
+                this.topView = false;
+                this.frontView = false;
+                this.sideView = false;
+            }
+            */
+            setAutoRotate(value) {
+                this.orbitControls.autoRotate = value;
+            }           
+        }
 
         class Axes extends THREE.AxesHelper {
             constructor(size = 10, visible = true) {
@@ -297,7 +390,137 @@
                                 object.traverse(function(child) {
                                     if (child.isMesh) {
                                         child.material = new THREE.MeshBasicMaterial({color: model.color});
+                                        switch (child.name) {
+                                        /* - - - Wheels - - - */
+                                        // Llanta
+                                        case "WheelLF_Wheels_Tires_158": // Frontal izquierda
+                                        case "Wheels_WheelLR_Tires2_158": // Trasera izquierda
+                                        case "Wheels_WheelRF_Tires_158": // Frontal derecha
+                                        case "Wheels_WheelRR_Tires2_158": // Trasera derecha
+                                            child.material.color.setHex(
+                                                0x525252
+                                            );
+                                            break;
+                                        // Inside object
+                                        case "WheelHubs_WheelLF_Wheels_176": // Frontal izquierda
+                                        case "Wheels_181_WheelHubs_WheelLR": // Trasera izquierda
+                                        case "Wheels_WheelHubs_WheelRF_176": // Frontal derecha
+                                        case "Wheels_181_WheelHubs_WheelRR": // Trasera derecha
+                                            child.material.color.setHex(
+                                                0xb4b4b4
+                                            );
+                                            break;
+                                        // Rines
+                                        case "WheelLF_Wheels_321_Tires": // Frontal izquierda
+                                        case "Wheels_WheelLR_321_Tires2": // Trasera izquierda
+                                        case "Wheels_WheelRF_321_Tires": // Frontal derecha
+                                        case "Wheels_WheelRR_321_Tires2": // Trasera derecha
+                                            child.material.color.setHex(
+                                                0xc5c5c5
+                                            );
+                                            break;
+                                        // Centro llanta
+                                        case "WheelLF_Wheels_Tires_p22": // Frontal izquierda
+                                        case "Wheels_WheelLR_Tires2_p22": // Trasera izquierda
+                                        case "Wheels_WheelRF_Tires_p22": // Frontal derecha
+                                        case "Wheels_WheelRR_Tires2_p22": // Trasera derecha
+                                            child.material.color.setHex(
+                                                0xa6a6a6
+                                            );
+                                            break;
+                                        // Disco
+                                        case "Wheels_WheelHubs_WheelLR_175": // Trasera izquierda
+                                        case "Wheels_175_WheelHubs_WheelRF": // Frontal derecha
+                                        case "Wheels_WheelHubs_WheelRR_175": // Trasera derecha
+                                            child.material.color.setHex(
+                                                0x878787
+                                            );
+                                            break;
+
+                                        /* - - - Body - - - */
+                                        // Logo
+                                        case "Body_232_LogoSide": // Derecha
+                                        case "232_LogoNose_Body": // Frente
+                                            child.material.color.setHex(
+                                                0xfff707
+                                            );
+                                            break;
+                                        // Escape
+                                        case "Body_Tail_p21":
+                                            child.material.color.setHex(
+                                                0xcbcbcb
+                                            );
+                                            break;
+                                        // Alrededor de escape
+                                        case "Body_Tail_p166": // Izq
+                                        case "Body_Tail_p165": // Der
+                                            child.material.color.setHex(
+                                                0x464646
+                                            );
+                                            break;
+                                        // Defensa trasera
+                                        case "Body_282_Tail001":
+                                        case "Body_Tail_294": // Pico medio IZQ
+                                        case "Body_Tail_295": // Pico medio DER
+                                        // Atras de cristal trasero
+                                        case "Body_Hatch_39":
+                                            child.material.color.setHex(
+                                                0x2b2b2b
+                                            );
+                                            break;
+                                        // Cristales
+                                        case "Body_SideMirror_306": // Espejo derecho
+                                        case "38_Window001": // Parabrisas F y B
+                                            child.material.color.setHex(
+                                                0xc5f6ff
+                                            );
+                                            break;
+                                        // Wiperlocs
+                                        case "p24_WiperLoc":
+                                        case "WiperLoc_p23":
+                                            child.material.color.setHex(
+                                                0x464646
+                                            );
+                                            break;
+                                        // Luces
+                                        case "L_HeadLight_12":
+                                        case "HeadLight_R_12":
+                                            child.material.color.setHex(
+                                                0xf0f0f0
+                                            );
+                                            break;
+                                        case "L_HeadLight_13":
+                                        case "HeadLight_R_13":
+                                            child.material.color.setHex(
+                                                0xb8b8b8
+                                            );
+                                            break;
+                                        case "L_HeadLight_p7":
+                                        case "HeadLight_R_p7":
+                                            child.material.color.setHex(
+                                                0x83d4ff
+                                            );
+                                            break;
+                                        case "L_HeadLight_p175":
+                                        case "HeadLight_R_p175":
+                                            child.material.color.setHex(
+                                                0x8ff7c3b
+                                            );
+                                            break;
+                                        case "L_HeadLight_p174":
+                                        case "L_HeadLight_p176":
+                                        case "HeadLight_R_p174":
+                                        case "HeadLight_R_p176":
+                                            child.material.color.setHex(
+                                                0xececec
+                                            );
+                                            break;
+                                        default:
+                                            //Declaraciones ejecutadas cuando ninguno de los valores coincide con el valor de la expresión
+                                            break;
+                                    
                                     }
+                                }
                                 });
                                 model.solid = object;
                                 // WIRE
