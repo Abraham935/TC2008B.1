@@ -614,7 +614,7 @@
                 trafficLightTexture .wrapS = THREE.RepeatWrapping;
                 trafficLightTexture.wrapT = THREE.RepeatWrapping;
                 trafficLightTexture.repeat.set(1,1);
-                const trafficLightmaterial = new THREE.MeshBasicMaterial({map: trafficLightTexture, side:THREE.DoubleSide});
+                const trafficLightmaterial = new THREE.MeshPhongMaterial({map: trafficLightTexture, side:THREE.DoubleSide});
 
                 this.color = 0xcc0000;
                 this.wireColor = 0xffffff;
@@ -640,7 +640,7 @@
                                 });*/
                                 object.traverse(function(child) {
                                     if (child.isMesh) {
-                                        child.material = new THREE.MeshBasicMaterial({map: trafficLightTexture, side:THREE.DoubleSide});
+                                        child.material = new THREE.MeshPhongMaterial({map: trafficLightTexture, side:THREE.DoubleSide});
                                     }
                                 });
                                 model.solid = object;
